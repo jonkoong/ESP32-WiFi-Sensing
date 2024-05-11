@@ -18,3 +18,7 @@ Currently, we have trained 4 machine learing models:
 - A Support Vector Machine model which has an accuracy of 0.83.
 
 Model binary and notebook files can be found in their respective folders `models` and `notebooks`.
+
+## All-in-one file
+
+From loading csv files to training model, please go to `notebooks\CSI_full_training.ipynb`.
