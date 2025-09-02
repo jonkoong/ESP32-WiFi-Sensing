@@ -5,13 +5,13 @@ Note: This GitHub repo was originally a fork from [The ESP32 CSI Tool's repo](ht
 
 ![Alt text](/asset/architecture.png)
 
-The project use two ESP32 microcontrollers as both TX and RX with the help of the ESP32 CSI tools for data collection as well as the Jetson Nano for on-edge model deployment. After running inference, all predictions will be published to an MQTT server and then the server will published these messages to all subcribers (including the Android applicaiton).
+The project use two ESP32 microcontrollers as both TX and RX with the help of the ESP32 CSI tools for data collection as well as the Jetson Nano for on-edge model deployment. After running inference, all predictions will be published to an MQTT server and then the server will publish these messages to all subscribers (including the Android application).
 
 The dataset we collected is in the `datasets` folder. Although the CSI data collection has 7 activities, we only used 3 of them for training and evaluating machine learning models.
 
 All the logic for running on Jetson Nano is in `python_utils/real_time_inference.py`
 
-Currently, we have trained 4 machine learing models:
+Currently, we have trained 4 machine learning models:
 - A CNN model which has an accuracy of 0.95 and a loss of 0.02.
 - A Random Forest model which has an accuracy of 0.93.
 - A Linear Regression model which has an accuracy of 0.82.
