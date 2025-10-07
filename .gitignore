@@ -3,3 +3,4 @@ sdkconfig
 sdkconfig.old
 .idea
 venv
+autoencoder/models/autoencoder_stage1.keras
