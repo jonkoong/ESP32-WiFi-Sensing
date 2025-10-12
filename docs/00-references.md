@@ -25,3 +25,5 @@ https://github.com/bigtreeyanger/presence_detection_cnn?tab=readme-ov-file
 one of the more original papers about CSI data, just about detecting presence of human. However needs ubuntu
 
 
+# Marsrocky/Awesome-WiFi-CSI-Sensing
+https://github.com/Marsrocky/Awesome-WiFi-CSI-Sensing
