@@ -1,0 +1,140 @@
+# research-papers\2207.07859v3.pdf
+The number of subcarriers is decided by the bandwidth and the tool. 
+The more subcarriers one has, the better resolution the CSI data is.
+
+# Improving resolution
+Antennas don't directly increase CSI subcarrier resolution. The number of subcarriers is determined by:
+WiFi standard (802.11n/ac/ax)
+Bandwidth (20MHz, 40MHz, 80MHz)
+Chipset capabilities (how the hardware processes signals)
+Firmware/driver (what data is exposed)
+However, antennas DO affect:
+Signal quality and SNR (Signal-to-Noise Ratio)
+Spatial diversity (multiple antennas = more data streams)
+Sensing accuracy and range
+
+Options
+1. Multiple external antennas (Dipole, directional patch, dual band)
+
+# 3 methods of transforming CSI data
+1. Use amplitude data only, what was done for the encoder already
+Raw phase data is randomly distributed due to random phase offsets
+Amplitude is more stable and suitable for WiFi sensing
+Simple denoising (like wavelet filtering) is enough to remove high-frequency noise
+Most common practice in WiFi sensing applications
+
+2. CSI Difference Between Antennas
+with 3 receivers, we get 
+Shape: (3 receivers, 64 subcarriers, T timestamps)
+2 options to blend data
+1. Simple: Stack together the 3 receivers like an RGB image
+2. Determine phase difference between the devices
+``` python
+# Phase difference between devices
+phase_diff_2_3 = phase_device2 - phase_device3
+phase_diff_2_4 = phase_device2 - phase_device4
+phase_diff_3_4 = phase_device3 - phase_device4
+
+# Amplitude ratio
+amp_ratio_2_3 = amplitude_device2 / (amplitude_device3 + 1e-10)
+amp_ratio_2_4 = amplitude_device2 / (amplitude_device4 + 1e-10)
+
+# Combine as features
+features = np.concatenate([
+    amplitude_device2,
+    amplitude_device3,
+    amplitude_device4,
+    phase_diff_2_3,
+    phase_diff_2_4,
+    amp_ratio_2_3,
+    amp_ratio_2_4
+], axis=-1)
+```
+Cancels out environmental noise - Common noise appears in both devices
+Emphasizes human-induced changes - Only human movement creates differences
+More robust to interference - Differential measurements are more stable
+
+
+3. Doppler Representation (BVP - Body-coordinate Velocity Profile)
+Simulate doppler features to eliminate environmental dependency
+Only reflects human motions, domain-invariant
+Used in Widar dataset
+Based on the doppler principle: moving towards, frequencyt increase and vice versa
+When a person moves in a wifi environment, WiFi signals bounce off the moving person
+The reflected signal has a frequency shift (Doppler shift)
+This shift is proportional to velocity of movement
+Very important for zero shot challenge
+Requires at least 3 receivers for velocity estimation, ==data needs to be synced==
+
+# Features in CSI data
+- subcarrier amplitude - spatial features. Each subcarrier captures a different frequency of the WiFi signal, and different frequencies interact with the environment differently:
+Low frequency (Subcarrier 1-10):
+- Long wavelength (~15cm)
+- Reflects off large objects (walls, furniture)
+- Less sensitive to small movements
+
+High frequency (Subcarrier 50-64):
+- Short wavelength (~5cm)  
+- Reflects off smaller objects (person's body parts)
+- More sensitive to fine movements
+CNNs kernels can be used to scan across subcarriers and detect spatial patterns
+
+Temporal Features
+- how CSI changes over time as person moves
+- best for RNNs
+
+Antenna/Channel Features
+- multiple receive/transmit antennas capturing the same signal from different paths.
+ie channel in a colour image
+
+
+# Model design
+2 parts: feature extractor and classifier
+CNN (or improved RESNET for feature extractor)
+wnat to keep depth of CNN to lower than 20 layers
+Note: kernels slide across subcarriers, but do not capture temporal data
+can use kernels 2D kernels to extract spatial and temporal features
++ fewer training params
++ preservation of subcarrier and time dimension
+-if features exceed kernel size, can fail to capture features or dependencies
+- all feature maps have equal weightage (can be overcome by using attention) (spatialattention in CTS-AM )
+
+CNN + GRU
+- 'best of both worlds' - extract features + temporal patterns, but not as overhead heavy as an LSTM
+
+Attention
+- instead of placing equal weight on all features (subcarriers, CNN kernel feature etc.)
+- determine the most important ones
+- CSI data is divided into tokens, ie small spatial-temporal regions (a packet of X subcarriers over y amount of time), then embedded into a vector map
+- add positional information
+- now each patch has - What: Content of that CSI patch (from embedding) and - Where: Position in time and space (from positional encoding)
+- use multiple heads of attention to learn diff patterns
+- most flexible and powerful
+- needs massive data, extremely expensive to compute
+NOte: also can use lightweight attention
+``` python
+# Attention layer (lightweight!)
+layers.Reshape((98*25, 128)),  # Flatten spatial dims
+layers.MultiHeadAttention(num_heads=4, key_dim=32),  # Small attention
+```
+
+# Learning methods
+Supervised: requires massive amounts of labelled data
+Few shot/one shot: 
+Transfer learning: CSI data is domain/environment dependent - need domain adaptation to mitigate decrease in performance from domain shift. Strategies have been implemented to deal with this problem
+Unsupervised: Autofi. Not great
+
+# Datasets
+
+# Models
+- CNN-5 for supervised learning
+- Unsupervised learning: Unsueprvised feature extractionL: 2 parallel networks, then let the networks teach each other, to learn good feature representations that capture CSI patterns without knowing what activities they represent. For classification, use labelled data
+
+---
+# Hardware Notes
+MQTT may be too slow to handle 3 clients at once - consider using UDP
+
+
+---
+Future ideas
+- run CNN feature extraction or autoencoder on esp32 to minimise amount of data to transmit?

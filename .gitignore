@@ -4,3 +4,5 @@ sdkconfig.old
 .idea
 venv
 autoencoder/models/autoencoder_stage1.keras
+WiFi-CSI-Sensing-Benchmark/
+.claude/
